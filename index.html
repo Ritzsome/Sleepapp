@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ambiance Mixer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide-react@0.292.0/dist/lucide-react.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for a more subtle look in dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        .sound-card.active {
+            border-color: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <!-- Header -->
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">Ambiance Mixer</h1>
+            <p class="text-lg text-gray-400 mt-2">Create your perfect soundscape for focus, relaxation, or sleep.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Left Column: Sound Library -->
+            <div class="lg:col-span-2">
+                <div id="sound-library">
+                    <!-- Sound categories will be injected here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Right Column: Mixer and Controls -->
+            <div class="lg:col-span-1 space-y-8">
+                
+                <!-- Your Mix Section -->
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sliders-horizontal mr-2"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+                        Your Mix
+                    </h2>
+                    <div id="mixer-controls" class="space-y-4 min-h-[100px]">
+                       <p class="text-gray-400 text-center py-4" id="mixer-placeholder">Click on a sound to start your mix.</p>
+                    </div>
+                     <div class="mt-6">
+                        <button id="master-play-pause" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-all duration-200">
+                            <svg id="master-play-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play mr-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <svg id="master-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pause mr-2 hidden"><rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/></svg>
+                            <span id="master-play-text">Play All</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timer Section -->
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-timer mr-2"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="12" y1="14" y2="22"/><path d="M12 14l3-3"/><path d="M19 12a7.7 7.7 0 0 0-5-7 7.7 7.7 0 0 0-7 5 7.7 7.7 0 0 0 5 12 7.7 7.7 0 0 0 7-5Z"/></svg>
+                        Sleep Timer
+                    </h2>
+                    <div id="timer-display" class="text-center text-4xl font-mono mb-4">--:--</div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <button class="timer-btn bg-gray-700 hover:bg-gray-600 py-2 rounded-lg" data-minutes="15">15 min</button>
+                        <button class="timer-btn bg-gray-700 hover:bg-gray-600 py-2 rounded-lg" data-minutes="30">30 min</button>
+                        <button class="timer-btn bg-gray-700 hover:bg-gray-600 py-2 rounded-lg" data-minutes="60">60 min</button>
+                        <button id="stop-timer-btn" class="bg-red-600 hover:bg-red-700 py-2 rounded-lg">Stop</button>
+                    </div>
+                </div>
+                
+                <!-- Presets Section -->
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+                     <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-save mr-2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Presets
+                    </h2>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="preset-name" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Mix Name...">
+                        <button id="save-preset-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Save</button>
+                    </div>
+                    <div id="presets-list" class="space-y-2">
+                        <!-- Saved presets will be injected here -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-700 text-white py-3 px-5 rounded-lg shadow-xl translate-x-[120%] transition-transform duration-500">
+        <p id="toast-message"></p>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA ---
+            const soundData = {
+                "Water": {
+                    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waves"><path d="M3 6c.7.7 1.8 1 2.9 1 1.2 0 2.3-.3 3.1-1s1.8-1 2.9-1c1.2 0 2.3.3 3.1 1s1.8 1 2.9 1c1.2 0 2.3-.3 3.1-1"/><path d="M3 12c.7.7 1.8 1 2.9 1 1.2 0 2.3-.3 3.1-1s1.8-1 2.9-1c1.2 0 2.3.3 3.1 1s1.8 1 2.9 1c1.2 0 2.3-.3 3.1-1"/><path d="M3 18c.7.7 1.8 1 2.9 1 1.2 0 2.3-.3 3.1-1s1.8-1 2.9-1c1.2 0 2.3.3 3.1 1s1.8 1 2.9 1c1.2 0 2.3-.3 3.1-1"/></svg>`,
+                    sounds: [
+                        { name: "Gentle River", file: "https://cdn.pixabay.com/audio/2022/05/23/audio_a40a58a74b.mp3" },
+                        { name: "Ocean Waves", file: "https://cdn.pixabay.com/audio/2023/09/23/audio_9468940645.mp3" },
+                        { name: "Waterfall", file: "https://cdn.pixabay.com/audio/2022/04/01/audio_a7a2a11832.mp3" },
+                        { name: "Dripping Cave", file: "https://cdn.pixabay.com/audio/2022/03/07/audio_4bc92d6e3a.mp3" },
+                    ]
+                },
+                "Rain": {
+                     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cloud-rain"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`,
+                    sounds: [
+                        { name: "Light Drizzle", file: "https://cdn.pixabay.com/audio/2022/11/11/audio_1e37042a92.mp3" },
+                        { name: "Rain on Window", file: "https://cdn.pixabay.com/audio/2022/05/27/audio_349969d5a0.mp3" },
+                        { name: "Heavy Downpour", file: "https://cdn.pixabay.com/audio/2022/08/04/audio_3c3b5c7c2b.mp3" },
+                        { name: "Distant Thunder", file: "https://cdn.pixabay.com/audio/2022/09/23/audio_48CF68132F.mp3" },
+                    ]
+                },
+                "Nature": {
+                     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-leaf"><path d="M11 20A7 7 0 0 1 4 13V8a5 5 0 0 1 10 0v5a7 7 0 0 1-7 7Zm0 0V8"/><path d="M11 8C7.5 8 5 5.5 5 2.5S7.5 0 11 0s6 2.5 6 5.5V8"/></svg>`,
+                    sounds: [
+                        { name: "Forest Wind", file: "https://cdn.pixabay.com/audio/2022/03/22/audio_951e7f642a.mp3" },
+                        { name: "Chirping Birds", file: "https://cdn.pixabay.com/audio/2022/04/16/audio_970de8c7b8.mp3" },
+                        { name: "Crickets Night", file: "https://cdn.pixabay.com/audio/2022/02/08/audio_3167195484.mp3" },
+                        { name: "Rustling Leaves", file: "https://cdn.pixabay.com/audio/2022/10/25/audio_1526d11626.mp3" },
+                    ]
+                },
+                "Fire & More": {
+                     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flame"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+                    sounds: [
+                        { name: "Crackling Fire", file: "https://cdn.pixabay.com/audio/2022/02/04/audio_a27a85c699.mp3" },
+                        { name: "White Noise", file: "https://cdn.pixabay.com/audio/2023/07/20/audio_2c91814612.mp3" },
+                        { name: "Fan Hum", file: "https://cdn.pixabay.com/audio/2023/07/19/audio_d0879e6129.mp3" },
+                    ]
+                }
+            };
+
+            // --- STATE ---
+            let players = {}; // Stores Tone.Player objects
+            let activeSounds = new Set();
+            let isMasterPlaying = false;
+            let timerInterval;
+            let presets = JSON.parse(localStorage.getItem('ambiancePresets')) || {};
+
+            // --- UI ELEMENTS ---
+            const soundLibraryContainer = document.getElementById('sound-library');
+            const mixerControlsContainer = document.getElementById('mixer-controls');
+            const masterPlayPauseBtn = document.getElementById('master-play-pause');
+            const masterPlayIcon = document.getElementById('master-play-icon');
+            const masterPauseIcon = document.getElementById('master-pause-icon');
+            const masterPlayText = document.getElementById('master-play-text');
+            const timerDisplay = document.getElementById('timer-display');
+            const mixerPlaceholder = document.getElementById('mixer-placeholder');
+            const savePresetBtn = document.getElementById('save-preset-btn');
+            const presetNameInput = document.getElementById('preset-name');
+            const presetsListContainer = document.getElementById('presets-list');
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+
+            // --- INITIALIZATION ---
+
+            const initialize = async () => {
+                await Tone.start();
+                console.log("Audio context started");
+                renderSoundLibrary();
+                renderPresets();
+            };
+            
+            // --- RENDER FUNCTIONS ---
+            
+            const renderSoundLibrary = () => {
+                soundLibraryContainer.innerHTML = '';
+                for (const category in soundData) {
+                    const categoryData = soundData[category];
+                    let categoryHtml = `
+                        <div class="mb-8">
+                            <h3 class="text-2xl font-semibold mb-4 text-gray-300 flex items-center">${categoryData.icon} <span class="ml-2">${category}</span></h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    `;
+                    
+                    categoryData.sounds.forEach(sound => {
+                        categoryHtml += `
+                            <div id="card-${sound.name}" class="sound-card bg-gray-800 p-4 rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all duration-200 flex flex-col items-center justify-center text-center" data-sound-name="${sound.name}" data-file-url="${sound.file}">
+                                <span class="text-sm md:text-base">${sound.name}</span>
+                            </div>
+                        `;
+                    });
+
+                    categoryHtml += `</div></div>`;
+                    soundLibraryContainer.innerHTML += categoryHtml;
+                }
+                 // Add event listeners after rendering
+                document.querySelectorAll('.sound-card').forEach(card => {
+                    card.addEventListener('click', () => toggleSound(card.dataset.soundName, card.dataset.fileUrl));
+                });
+            };
+
+            const renderMixer = () => {
+                if (activeSounds.size === 0) {
+                    mixerPlaceholder.classList.remove('hidden');
+                    mixerControlsContainer.innerHTML = '';
+                    mixerControlsContainer.appendChild(mixerPlaceholder);
+                    return;
+                }
+
+                mixerPlaceholder.classList.add('hidden');
+                mixerControlsContainer.innerHTML = '';
+
+                activeSounds.forEach(soundName => {
+                    const player = players[soundName];
+                    if (!player) return;
+
+                    const controlHtml = document.createElement('div');
+                    controlHtml.className = 'flex items-center gap-4';
+                    controlHtml.innerHTML = `
+                        <span class="flex-1 text-gray-300">${soundName}</span>
+                        <input type="range" min="-40" max="6" step="1" value="${player.volume.value}" class="volume-slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" data-sound-name="${soundName}">
+                    `;
+                    mixerControlsContainer.appendChild(controlHtml);
+                });
+            };
+            
+            const renderPresets = () => {
+                presetsListContainer.innerHTML = '';
+                 if (Object.keys(presets).length === 0) {
+                    presetsListContainer.innerHTML = `<p class="text-gray-500 text-center">No saved presets yet.</p>`;
+                    return;
+                }
+                for (const presetName in presets) {
+                    const presetEl = document.createElement('div');
+                    presetEl.className = 'flex items-center justify-between bg-gray-700 p-3 rounded-lg';
+                    presetEl.innerHTML = `
+                        <span class="font-medium">${presetName}</span>
+                        <div class="flex gap-2">
+                            <button class="load-preset-btn p-2 bg-blue-600 hover:bg-blue-700 rounded-md" data-preset-name="${presetName}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            </button>
+                            <button class="delete-preset-btn p-2 bg-red-600 hover:bg-red-700 rounded-md" data-preset-name="${presetName}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                            </button>
+                        </div>
+                    `;
+                    presetsListContainer.appendChild(presetEl);
+                }
+            };
+            
+            // --- AUDIO LOGIC ---
+            
+            const createPlayer = (soundName, fileUrl) => {
+                if (!players[soundName]) {
+                    const player = new Tone.Player({
+                        url: fileUrl,
+                        loop: true,
+                        volume: -10, // Default volume
+                        autostart: false,
+                        fadeIn: 0.5,
+                        fadeOut: 0.5
+                    }).toDestination();
+                    players[soundName] = player;
+                    return player;
+                }
+                return players[soundName];
+            };
+
+            const toggleSound = async (soundName, fileUrl) => {
+                await Tone.start(); // Ensure context is running
+                const card = document.getElementById(`card-${soundName}`);
+
+                if (activeSounds.has(soundName)) {
+                    // --- Deactivate Sound ---
+                    activeSounds.delete(soundName);
+                    const player = players[soundName];
+                    if (player && player.state === 'started') {
+                        player.stop();
+                    }
+                    card.classList.remove('active');
+                } else {
+                    // --- Activate Sound ---
+                    activeSounds.add(soundName);
+                    const player = createPlayer(soundName, fileUrl);
+                    if (isMasterPlaying && player.state !== 'started') {
+                       await Tone.loaded(); // Wait for all files to be loaded
+                       player.start();
+                    }
+                    card.classList.add('active');
+                }
+                updateMasterPlayState();
+                renderMixer();
+            };
+
+            const updateMasterPlayState = () => {
+                if (activeSounds.size > 0 && isMasterPlaying) {
+                    masterPlayPauseBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    masterPlayPauseBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    masterPlayIcon.classList.add('hidden');
+                    masterPauseIcon.classList.remove('hidden');
+                    masterPlayText.textContent = "Pause All";
+                } else {
+                    masterPlayPauseBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    masterPlayPauseBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    masterPlayIcon.classList.remove('hidden');
+                    masterPauseIcon.classList.add('hidden');
+                    masterPlayText.textContent = "Play All";
+                    isMasterPlaying = false; // Ensure this is false if no sounds are active
+                }
+                if (activeSounds.size === 0) {
+                     stopAllSounds();
+                }
+            };
+            
+            const stopAllSounds = (fadeout = true) => {
+                Object.values(players).forEach(player => {
+                    if (player.state === 'started') {
+                        if(fadeout){
+                           player.volume.rampTo(-Infinity, 2); // 2 second fade out
+                           setTimeout(() => player.stop(), 2000);
+                        } else {
+                           player.stop();
+                        }
+                    }
+                });
+                 isMasterPlaying = false;
+                 updateMasterPlayState();
+            }
+
+            // --- EVENT LISTENERS ---
+
+            masterPlayPauseBtn.addEventListener('click', async () => {
+                await Tone.start(); // Ensure context is running
+                if (activeSounds.size === 0) {
+                    showToast('Add a sound to your mix first!', 'error');
+                    return;
+                }
+                isMasterPlaying = !isMasterPlaying;
+
+                if (isMasterPlaying) {
+                    // Play all active sounds
+                    await Tone.loaded();
+                    activeSounds.forEach(soundName => {
+                        const player = players[soundName];
+                        if (player && player.state !== 'started') {
+                            player.start();
+                        }
+                    });
+                } else {
+                    // Stop all sounds
+                    Object.values(players).forEach(player => {
+                        if (player.state === 'started') player.stop();
+                    });
+                }
+                updateMasterPlayState();
+            });
+
+            mixerControlsContainer.addEventListener('input', (e) => {
+                if (e.target.classList.contains('volume-slider')) {
+                    const soundName = e.target.dataset.soundName;
+                    const volume = e.target.value;
+                    if (players[soundName]) {
+                        players[soundName].volume.value = volume;
+                    }
+                }
+            });
+            
+            // --- TIMER LOGIC ---
+            document.querySelectorAll('.timer-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const minutes = parseInt(btn.dataset.minutes, 10);
+                    startTimer(minutes * 60);
+                });
+            });
+            
+            document.getElementById('stop-timer-btn').addEventListener('click', () => {
+                stopTimer();
+                showToast('Timer stopped.');
+            });
+
+            const startTimer = (durationInSeconds) => {
+                clearInterval(timerInterval);
+                let timer = durationInSeconds;
+
+                timerInterval = setInterval(() => {
+                    let minutes = Math.floor(timer / 60);
+                    let seconds = timer % 60;
+
+                    minutes = minutes < 10 ? '0' + minutes : minutes;
+                    seconds = seconds < 10 ? '0' + seconds : seconds;
+
+                    timerDisplay.textContent = `${minutes}:${seconds}`;
+
+                    if (--timer < 0) {
+                        stopTimer();
+                        showToast('Time is up! Fading out sounds...', 'success');
+                        stopAllSounds(true); // Fade out and stop
+                    }
+                }, 1000);
+                 showToast(`Timer set for ${durationInSeconds/60} minutes.`, 'success');
+            };
+
+            const stopTimer = () => {
+                clearInterval(timerInterval);
+                timerDisplay.textContent = '--:--';
+            };
+            
+            // --- PRESET LOGIC ---
+            
+            savePresetBtn.addEventListener('click', () => {
+                const name = presetNameInput.value.trim();
+                if (!name) {
+                    showToast('Please enter a name for your preset.', 'error');
+                    return;
+                }
+                if (activeSounds.size === 0) {
+                    showToast('Add some sounds to the mix before saving.', 'error');
+                    return;
+                }
+                
+                const presetData = {
+                    sounds: Array.from(activeSounds),
+                    volumes: {}
+                };
+
+                activeSounds.forEach(soundName => {
+                    presetData.volumes[soundName] = players[soundName].volume.value;
+                });
+                
+                presets[name] = presetData;
+                localStorage.setItem('ambiancePresets', JSON.stringify(presets));
+                
+                renderPresets();
+                presetNameInput.value = '';
+                showToast(`Preset "${name}" saved!`, 'success');
+            });
+            
+            presetsListContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+                
+                const presetName = button.dataset.presetName;
+
+                if(button.classList.contains('load-preset-btn')) {
+                    loadPreset(presetName);
+                } else if (button.classList.contains('delete-preset-btn')) {
+                    deletePreset(presetName);
+                }
+            });
+
+            const loadPreset = (presetName) => {
+                const preset = presets[presetName];
+                if (!preset) return;
+                
+                stopAllSounds(false); // Stop current sounds immediately
+                activeSounds.clear();
+                
+                document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('active'));
+
+                preset.sounds.forEach(soundName => {
+                    activeSounds.add(soundName);
+                    
+                    const card = document.getElementById(`card-${soundName}`);
+                    if (card) {
+                        card.classList.add('active');
+                        const fileUrl = card.dataset.fileUrl;
+                        const player = createPlayer(soundName, fileUrl);
+                        player.volume.value = preset.volumes[soundName] || -10;
+                    }
+                });
+
+                renderMixer();
+                
+                // Automatically play the loaded preset
+                isMasterPlaying = true;
+                if (activeSounds.size > 0) {
+                     setTimeout(async () => {
+                         await Tone.loaded();
+                         activeSounds.forEach(sn => players[sn] && players[sn].state !== 'started' && players[sn].start());
+                         updateMasterPlayState();
+                     }, 200);
+                }
+
+                showToast(`Loaded preset: "${presetName}"`, 'success');
+            };
+
+            const deletePreset = (presetName) => {
+                if (confirm(`Are you sure you want to delete the preset "${presetName}"?`)) {
+                    delete presets[presetName];
+                    localStorage.setItem('ambiancePresets', JSON.stringify(presets));
+                    renderPresets();
+                    showToast(`Preset "${presetName}" deleted.`, 'success');
+                }
+            };
+
+            // --- UTILITY ---
+             let toastTimeout;
+            const showToast = (message, type = 'info') => {
+                toastMessage.textContent = message;
+                
+                toast.classList.remove('bg-gray-700', 'bg-green-600', 'bg-red-600');
+                if(type === 'success') toast.classList.add('bg-green-600');
+                else if (type === 'error') toast.classList.add('bg-red-600');
+                else toast.classList.add('bg-gray-700');
+
+                toast.classList.remove('translate-x-[120%]');
+                toast.classList.add('translate-x-0');
+
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('translate-x-0');
+                    toast.classList.add('translate-x-[120%]');
+                }, 3000);
+            };
+
+            // --- Let's go! ---
+            initialize();
+        });
+    </script>
+</body>
+</html>
